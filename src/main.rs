@@ -2,11 +2,9 @@ extern crate calamine as ca;
 extern crate nalgebra as na;
 extern crate nalgebra_sparse as na_sparse;
 
-
-use na::{Matrix2, Matrix4, Matrix6};
-// use na_sparse::CooMatrix;
-
 use ca::{open_workbook, Data, DataType, Range, Reader, Xlsx};
+use na::Matrix6;
+// use na_sparse::CooMatrix;
 
 #[derive(Debug, Clone, Copy)]
 struct Node(f32, f32);
@@ -42,15 +40,16 @@ trait New {
 }
 
 fn fill_anything<T: New>(s: Range<Data>, vec: &mut Vec<T>) {
-    for row in s.rows() {
+    for row in s.rows().skip(1) {
         vec.push(T::new(row));
     }
 }
+
 impl New for Node {
     fn new(row: &[Data]) -> Self {
         Node(
-            row[0].get_float().unwrap() as f32,
-            row[1].get_float().unwrap() as f32,
+            row[0].get_float().unwrap() as f32, // x
+            row[1].get_float().unwrap() as f32, // y
         )
     }
 }
@@ -109,74 +108,113 @@ impl Element {
         let node_b_id = row[0].get_float().unwrap() as usize;
         let node_e_id = row[1].get_float().unwrap() as usize;
         let phys_geo_id = row[2].get_float().unwrap() as usize;
-        let a = (vec_of_nodes[node_b_id].0 - vec_of_nodes[node_e_id].0).abs();
-        let b = (vec_of_nodes[node_b_id].1 - vec_of_nodes[node_e_id].1).abs();
-        let l = (a.powf(2.0) + b.powf(2.0)).sqrt();
+        let dx = vec_of_nodes[node_b_id].0 - vec_of_nodes[node_e_id].0;
+        let dy = vec_of_nodes[node_b_id].1 - vec_of_nodes[node_e_id].1;
+        let l = (dx.powf(2.0) + dy.powf(2.0)).sqrt();
         Element {
             node_b_id,
             node_e_id,
             phys_geo_id,
             l,
-            element_sin: a / l,
-            element_cos: b / l,
+            element_sin: dy / l,
+            element_cos: dx / l,
         }
     }
-    fn c_rs_loc(&self, pgs: &Vec<PhysGeo>) -> [f32;4] {
-        let e = pgs[self.phys_geo_id].e;
-        let f = pgs[self.phys_geo_id].f;
-        let r: [f32;4] = 
-            [
-                ((e * f) / self.l),
-                -((e * f) / self.l),
-                -((e * f) / self.l),
-                ((e * f) / self.l),
-            ]
-            ;
-        r
-    }
 
-    fn c_sz_loc(&self, pgs: &Vec<PhysGeo>) -> [f32;16] {
+    pub fn c_localc_st(&self, pgs: &Vec<PhysGeo>) -> Matrix6<f32> {
         let e: f32 = pgs[self.phys_geo_id].e;
         let j: f32 = pgs[self.phys_geo_id].j;
-        let r:  [f32;16] = 
+        let f = pgs[self.phys_geo_id].f;
+
+        let rs = [
+            ((e * f) / self.l),
+            -((e * f) / self.l),
+            -((e * f) / self.l),
+            ((e * f) / self.l),
+        ];
+
+        let sz: [f32; 16] = [
+            //  1st row
+            ((12.0 * e * j) / self.l.powf(3.0)),
+            ((6.0 * e * j) / self.l.powf(2.0)),
+            -((12.0 * e * j) / self.l.powf(3.0)),
+            ((6.0 * e * j) / self.l.powf(2.0)),
+            // 2nd row
+            ((6.0 * e * j) / self.l.powf(2.0)),
+            ((4.0 * e * j) / self.l),
+            -((6.0 * e * j) / self.l.powf(2.0)),
+            ((2.0 * e * j) / self.l),
+            // 3rd row
+            -((12.0 * e * j) / self.l.powf(3.0)),
+            -((6.0 * e * j) / self.l.powf(2.0)),
+            ((12.0 * e * j) / self.l.powf(3.0)),
+            -((6.0 * e * j) / self.l.powf(2.0)),
+            // 4th row
+            ((6.0 * e * j) / self.l.powf(2.0)),
+            ((2.0 * e * j) / self.l),
+            -((6.0 * e * j) / self.l.powf(2.0)),
+            ((4.0 * e * j) / self.l),
+        ];
+
+        let result: Matrix6<f32> = Matrix6::from_iterator(
+            [
+                rs[0], 0.0, 0.0, rs[1], 0.0, 0.0, 0.0, sz[0], sz[1], 0.0, sz[2], sz[3], 0.0, sz[4],
+                sz[5], 0.0, sz[6], sz[7], rs[2], 0.0, 0.0, rs[3], 0.0, 0.0, 0.0, sz[8], sz[9], 0.0,
+                sz[10], sz[11], 0.0, sz[12], sz[13], 0.0, sz[14], sz[15],
+            ]
+            .into_iter(),
+        );
+        result
+    }
+    pub fn c_cos_matrix(&self) -> Matrix6<f32> {
+        let result = Matrix6::from_row_iterator(
             [
                 //  1st row
-                ((12.0 * e * j) / self.l.powf(3.0)),
-                ((6.0 * e * j) / self.l.powf(2.0)),
-                -((12.0 * e * j) / self.l.powf(3.0)),
-                ((6.0 * e * j) / self.l.powf(2.0)),
+                self.element_cos,
+                self.element_sin,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
                 // 2nd row
-                ((6.0 * e * j) / self.l.powf(2.0)),
-                ((4.0 * e * j) / self.l),
-                -((6.0 * e * j) / self.l.powf(2.0)),
-                ((2.0 * e * j) / self.l),
+                -1.0 * self.element_sin,
+                self.element_cos,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
                 // 3rd row
-                -((12.0 * e * j) / self.l.powf(3.0)),
-                -((6.0 * e * j) / self.l.powf(2.0)),
-                ((12.0 * e * j) / self.l.powf(3.0)),
-                -((6.0 * e * j) / self.l.powf(2.0)),
+                0.0,
+                0.0,
+                1.0,
+                0.0,
+                0.0,
+                0.0,
                 // 4th row
-                ((6.0 * e * j) / self.l.powf(2.0)),
-                ((2.0 * e * j) / self.l),
-                -((6.0 * e * j) / self.l.powf(2.0)),
-                ((4.0 * e * j) / self.l),
-            ];
-        r
-    }
-    pub fn c_localc_st(&self, pgs: &Vec<PhysGeo>) -> Matrix6<f32> {
-        let rs = self.c_rs_loc(pgs);
-        let sz = self.c_sz_loc(pgs);
-        let mut stiffness: Matrix6<f32> = Matrix6::from_iterator( 
-            [
-                rs[0], 0.0, 0.0, rs[1] ,0.0,0.0,
-                0.0, sz[0],sz[1],0.0,sz[2],sz[3],
-                0.0, sz[4],sz[5],0.0,sz[6],sz[7],
-                rs[2], 0.0, 0.0, rs[3] ,0.0,0.0,
-                0.0, sz[8],sz[9],0.0,sz[10],sz[11],
-                0.0, sz[12],sz[13],0.0,sz[14],sz[15],
+                0.0,
+                0.0,
+                0.0,
+                self.element_cos,
+                self.element_sin,
+                0.0,
+                // 5th row
+                0.0,
+                0.0,
+                0.0,
+                -1.0 * self.element_sin,
+                self.element_cos,
+                0.0,
+                // 6th row
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                1.0,
             ]
-            .into_iter());
-        stiffness
+            .into_iter(),
+        );
+        result
     }
 }
 
@@ -197,7 +235,7 @@ fn main() {
             "properties" => fill_anything(workbook.worksheet_range(&name).unwrap(), &mut physgeos),
             "elements" => {
                 if !nodes.is_empty() {
-                    for row in workbook.worksheet_range(&name).unwrap().rows() {
+                    for row in workbook.worksheet_range(&name).unwrap().rows().skip(1) {
                         test_obj.push(Element::create(row, &nodes))
                     }
                 }
@@ -221,5 +259,15 @@ fn main() {
     for load in loads {
         println!("{:?} \t N : {:?} ", load, nodes[load.node_id]);
     }
-    print!("Stiffness matrix of the 1st element: {}",test_obj[0].c_localc_st(&physgeos));
+
+    let ob_local_st = test_obj[0].c_localc_st(&physgeos);
+    let ob_fr_cos = test_obj[0].c_cos_matrix();
+    let ob_fr_cos_t = ob_fr_cos.transpose();
+    print!("Stiffness matrix of the 1st element: {}",ob_local_st);
+    print!("Cosine matrix of the 1st element: {}", ob_fr_cos);
+    print!("Transposed cosine matrix of the 1st element: {}",ob_fr_cos_t);
+    print!(
+        "Global matrix of the 1st element: {}",
+        (ob_fr_cos_t * ob_local_st) * ob_fr_cos
+    );
 }
