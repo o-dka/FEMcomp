@@ -3,11 +3,11 @@ use std::{fs::File, io::BufReader};
 use calamine::{Data, DataType, Range, Reader, Xlsx};
 
 use crate::vals::{Constrains, Element, Load, Node, Obj, PhysGeo};
-pub trait New {
+trait New {
     fn new(row: &[Data]) -> Self;
 }
 
-pub fn fill_anything<T: New>(s: Range<Data>, vec: &mut Vec<T>) {
+fn fill_anything<T: New>(s: Range<Data>, vec: &mut Vec<T>) {
     for row in s.rows().skip(1) {
         vec.push(T::new(row));
     }
@@ -72,7 +72,7 @@ impl std::fmt::Display for Element {
     }
 }
 impl Element {
-    pub fn create(row: &[Data], vec_of_nodes: &Vec<Node>) -> Self {
+    fn create(row: &[Data], vec_of_nodes: &Vec<Node>) -> Self {
         let node_b_id = row[0].get_float().unwrap() as usize;
         let node_e_id = row[1].get_float().unwrap() as usize;
         let phys_geo_id = row[2].get_float().unwrap() as usize;
