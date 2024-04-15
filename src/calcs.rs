@@ -110,7 +110,7 @@ impl Element {
 impl Obj {
     pub fn c_glob(&self) {
         let mut result: CooMatrix<f32> =
-            CooMatrix::zeros(self.elements.len() * 3, self.elements.len() * 3);
+            CooMatrix::zeros((self.elements.len() * 3) + 3, (self.elements.len() * 3) + 3);
 
         for el in &self.elements {
             let el_r: Matrix6<f32> = el.c_glob_st(&self.physgeos);
@@ -136,7 +136,7 @@ impl Obj {
             }
 
         }
-        print!("{}", result.ncols()-3);
+        // print!("{}", result.ncols()-3);
         print!("{}", convert_coo_dense(&result));
     }
 }
