@@ -112,8 +112,8 @@ impl Obj {
 
             let el_enode_3 = el.node_e_id * 3;
             let el_bnode_3 = el.node_b_id * 3;
-            for i in 0..3 {
-                for j in 0..3 {
+            (0..3).for_each(|i| {
+                (0..3).for_each(|j| {
                     result.push(el_bnode_3 + j, el_bnode_3 + i, el_r[(i, j)]);
                     result.push(el_bnode_3 + j, el_enode_3 + i, el_r[((i + 3), j)]);
                     result.push(el_enode_3 + j, el_bnode_3 + i, el_r[(i, (j + 3))]);
@@ -126,34 +126,29 @@ impl Obj {
                     result.push(el_enode_3 + j, el_bnode_3 + i, el_r[i * 6 + j + 3]);
                     result.push(el_enode_3 + j, el_enode_3 + i, el_r[(i + 3) * 6 + j + 3]);
                     */
-                }
-            }
+                });
+            });
         }
-        // le epic kostyl
+        // le epic kostyl , removes the duplicates 
         result = CooMatrix::from(&convert_coo_csc(&result));
-
-        for cnt in &self.constraints {
-            for x in result.triplet_iter_mut() {
-                for (id, &dof) in cnt.stiffness.iter().enumerate() {
+        self.constraints.iter().for_each(|cnt| {
+            result.triplet_iter_mut().for_each(|x| {
+                cnt.stiffness.iter().enumerate().for_each(|(id, &dof)| {
                     if dof > 0.0 {
                         let indexer = cnt.node_id * 3 + id;
-                        if (indexer == x.1) && (indexer == x.0) {
-                            *x.2 = 1.0;
-                            // saved = (x.0,x.1);
-                            continue;
+                        match (indexer == x.0, indexer == x.1) {
+                            (true, true) => *x.2 = 1.0,
+                            (true, false) => *x.2 = 0.0,
+                            (false, true) => *x.2 = 0.0,
+                            _ => (), // dont delete this line
                         }
-                        if indexer == x.0 {
-                            *x.2 = 0.0;
-                        }
-                        if indexer == x.1 {
-                            *x.2 = 0.0;
-                        }
+                        
                     }
-                }
-            }
-        }
-
+                });
+            });
+        });
+        
         print!("{}", convert_coo_dense(&result));
+        
     }
-    // fn c_react_vect
 }

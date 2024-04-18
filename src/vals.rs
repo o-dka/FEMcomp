@@ -8,7 +8,7 @@ pub(crate) struct Node(
 
 pub(crate) struct Load {
     pub(crate) node_id: usize,
-    pub(crate) forces: (f32, f32, f32),
+    pub(crate) forces: [f32;3],
 }
 #[derive(Debug)]
 pub(crate) struct PhysGeo {

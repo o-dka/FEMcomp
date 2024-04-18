@@ -24,11 +24,11 @@ impl New for Load {
     fn new(row: &[Data]) -> Self {
         Load {
             node_id: row[0].get_float().unwrap() as usize,
-            forces: (
+            forces: [
                 row[1].get_float().unwrap() as f32,
                 row[2].get_float().unwrap() as f32,
                 row[3].get_float().unwrap() as f32,
-            ),
+            ],
         }
     }
 }
