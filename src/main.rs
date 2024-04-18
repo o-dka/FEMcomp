@@ -13,8 +13,8 @@ fn main() {
     let mut workbook: Xlsx<_> = open_workbook(path).expect("Cannot open file");
     let obj = Obj::create(&mut workbook);
     let decomp = CscCholesky::factor(&obj.c_glob()).unwrap();
-    print!("{}",&obj.c_lvec());
+    print!("{}",&obj.c_gvec());
 
-    print!("{}", decomp.solve(&obj.c_lvec()));
+    print!("{}", decomp.solve(&obj.c_gvec()));
 
 }

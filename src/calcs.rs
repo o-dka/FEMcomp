@@ -146,12 +146,12 @@ impl Obj {
         });
         CscMatrix::from(&result)
     }
-    
-    pub fn c_lvec(&self) -> DVector<f32>{
+
+    pub fn c_gvec(&self) -> DVector<f32>{
         let mut input: Vec<f32> = (0..(&self.elements.len() * 3)+3).map(|_x| 0.0).collect();
 
-        self.loads.iter().for_each(|load| {
-            self.constraints.iter().for_each(|cons| {
+        for load in self.loads.iter() {
+            for cons in self.constraints.iter() {
                 match cons.node_id == load.node_id {
                     true => (),
                     false => (0..3).for_each(|f| {
@@ -159,8 +159,8 @@ impl Obj {
                         input[load.node_id  + (f + 3)] = load.forces[f]; // :D
                     }),
                 }
-            });
-        });
+            }
+        }
       
         DVector::<f32>::from_iterator(self.elements.len() * 3+3,input)
     }
