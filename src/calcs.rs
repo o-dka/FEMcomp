@@ -1,10 +1,12 @@
 extern crate nalgebra as na;
 extern crate nalgebra_sparse as na_sparse;
 
-use crate::vals::{Element, Obj, PhysGeo};
+use std::usize::MAX;
+
+use crate::vals::{Constraint, Element, Obj, PhysGeo};
 
 use na::Matrix6;
-use na_sparse::{convert::serial::convert_coo_dense,CooMatrix};
+use na_sparse::{convert::serial::{convert_coo_csc, convert_coo_dense}, CooMatrix};
 
 impl Element {
     fn c_localc_st(&self, pgs: &Vec<PhysGeo>) -> Matrix6<f32> {
@@ -42,65 +44,57 @@ impl Element {
             ((4.0 * e * j) / self.l),
         ];
 
-        let result: Matrix6<f32> = Matrix6::from_iterator(
-            [
-                rs[0], 0.0, 0.0, rs[1], 0.0, 0.0, 0.0, sz[0], sz[1], 0.0, sz[2], sz[3], 0.0, sz[4],
-                sz[5], 0.0, sz[6], sz[7], rs[2], 0.0, 0.0, rs[3], 0.0, 0.0, 0.0, sz[8], sz[9], 0.0,
-                sz[10], sz[11], 0.0, sz[12], sz[13], 0.0, sz[14], sz[15],
-            ]
-            .into_iter(),
-        );
-        result
+        Matrix6::<f32>::from_iterator([
+            rs[0], 0.0, 0.0, rs[1], 0.0, 0.0, 0.0, sz[0], sz[1], 0.0, sz[2], sz[3], 0.0, sz[4],
+            sz[5], 0.0, sz[6], sz[7], rs[2], 0.0, 0.0, rs[3], 0.0, 0.0, 0.0, sz[8], sz[9], 0.0,
+            sz[10], sz[11], 0.0, sz[12], sz[13], 0.0, sz[14], sz[15],
+        ])
     }
-    fn c_cos_matrix(&self) -> Matrix6<f32> {
-        let result = Matrix6::from_row_iterator(
-            [
-                //  1st row
-                self.element_cos,
-                self.element_sin,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                // 2nd row
-                -1.0 * self.element_sin,
-                self.element_cos,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                // 3rd row
-                0.0,
-                0.0,
-                1.0,
-                0.0,
-                0.0,
-                0.0,
-                // 4th row
-                0.0,
-                0.0,
-                0.0,
-                self.element_cos,
-                self.element_sin,
-                0.0,
-                // 5th row
-                0.0,
-                0.0,
-                0.0,
-                -1.0 * self.element_sin,
-                self.element_cos,
-                0.0,
-                // 6th row
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                1.0,
-            ]
-            .into_iter(),
-        );
-        result
+    pub(crate) fn c_cos_matrix(&self) -> Matrix6<f32> {
+        Matrix6::<f32>::from_row_iterator([
+            //  1st row
+            self.element_cos,
+            self.element_sin,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            // 2nd row
+            -1.0 * self.element_sin,
+            self.element_cos,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            // 3rd row
+            0.0,
+            0.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            // 4th row
+            0.0,
+            0.0,
+            0.0,
+            self.element_cos,
+            self.element_sin,
+            0.0,
+            // 5th row
+            0.0,
+            0.0,
+            0.0,
+            -1.0 * self.element_sin,
+            self.element_cos,
+            0.0,
+            // 6th row
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            1.0,
+        ])
     }
     pub(crate) fn c_glob_st(&self, pgs: &Vec<PhysGeo>) -> Matrix6<f32> {
         (self.c_cos_matrix().transpose() * self.c_localc_st(pgs)) * self.c_cos_matrix()
@@ -114,29 +108,55 @@ impl Obj {
 
         for el in &self.elements {
             let el_r: Matrix6<f32> = el.c_glob_st(&self.physgeos);
-            
-            let mut nc = 0;
-            let mut nr = 0;
-            // Проверка на то если индекс в result уже занят
+
+            let el_enode_3 = el.node_e_id * 3;
+            let el_bnode_3 = el.node_b_id * 3;
             for i in 0..3 {
                 for j in 0..3 {
-                    nc = el.node_b_id * 3 + i;
-                    nr = el.node_b_id * 3 + j;
-                    result.push(nr, nc, el_r[i * 6 + j]);
-                    nc = el.node_e_id * 3 + i;
-                    nr = el.node_b_id * 3 + j;
-                    result.push(nr, nc, el_r[(i + 3) * 6 + j]);
-                    nc = el.node_b_id * 3 + i;
-                    nr = el.node_e_id * 3 + j;
-                    result.push(nr, nc, el_r[i * 6 + j + 3]);
-                    nc = el.node_e_id * 3 + i;
-                    nr = el.node_e_id * 3 + j;
-                    result.push(nr, nc, el_r[(i + 3) * 6 + j + 3]);
+                    
+                    result.push(el_bnode_3 + j, el_bnode_3 + i, el_r[(i, j)]);
+                    result.push(el_bnode_3 + j, el_enode_3 + i, el_r[((i + 3), j)]);
+                    result.push(el_enode_3 + j, el_bnode_3 + i, el_r[(i, (j + 3))]);
+                    result.push(el_enode_3 + j, el_enode_3 + i, el_r[((i + 3), (j + 3))]);
+
+                    /*
+                    alt implementation : 
+                    result.push(el_bnode_3 + j, el_bnode_3 + i, el_r[i * 6 + j]);
+                    result.push(el_bnode_3 + j, el_enode_3 + i, el_r[(i + 3) * 6 + j]);
+                    result.push(el_enode_3 + j, el_bnode_3 + i, el_r[i * 6 + j + 3]);
+                    result.push(el_enode_3 + j, el_enode_3 + i, el_r[(i + 3) * 6 + j + 3]);
+                    */
                 }
             }
-
         }
-        // print!("{}", result.ncols()-3);
+        // le epic kostyl
+        result = CooMatrix::from(&convert_coo_csc(&result));
+
+        println!("{} \n", convert_coo_dense(&result));
+        
+        for cnt in &self.constraints {
+            
+            for x in result.triplet_iter_mut(){
+                for (id, &dof) in cnt.stiffness.iter().enumerate() {
+                    if dof > 0.0 {
+                        let indexer = cnt.node_id * 3 + id;
+                        if (indexer == x.1) && (indexer == x.0) {
+                            *x.2 = 1.0;
+                            // saved = (x.0,x.1);
+                        }
+                        if indexer == x.0 {
+                            *x.2 = 0.0;
+                        }
+                        if indexer == x.1 {
+                            *x.2 = 0.0;
+                        }
+                    }
+                }
+                
+            }
+        }
+
         print!("{}", convert_coo_dense(&result));
     }
+    // fn c_react_vect
 }

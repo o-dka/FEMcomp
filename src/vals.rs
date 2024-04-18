@@ -16,9 +16,9 @@ pub(crate) struct PhysGeo {
     pub(crate) j: f32, //
     pub(crate) e: f32, //
 }
-pub(crate) struct Constrains {
+pub(crate) struct Constraint {
     pub(crate) node_id: usize,
-    pub(crate) dof: (bool, bool, bool),
+    pub(crate) stiffness: [f32;3],
 }
 #[derive(Debug)]
 pub(crate) struct Element {
@@ -34,5 +34,5 @@ pub(crate) struct Obj {
     pub(crate) nodes: Vec<Node>,
     pub(crate) loads: Vec<Load>,
     pub(crate) physgeos: Vec<PhysGeo>,
-    pub(crate) constraints: Vec<Constrains>,
+    pub(crate) constraints: Vec<Constraint>,
 }

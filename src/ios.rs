@@ -2,7 +2,7 @@ use std::{fs::File, io::BufReader};
 
 use calamine::{Data, DataType, Range, Reader, Xlsx};
 
-use crate::vals::{Constrains, Element, Load, Node, Obj, PhysGeo};
+use crate::vals::{Constraint, Element, Load, Node, Obj, PhysGeo};
 trait New {
     fn new(row: &[Data]) -> Self;
 }
@@ -41,15 +41,15 @@ impl New for PhysGeo {
         }
     }
 }
-impl New for Constrains {
+impl New for Constraint {
     fn new(row: &[Data]) -> Self {
-        Constrains {
+        Constraint {
             node_id: row[0].get_float().unwrap() as usize,
-            dof: (
-                row[1].get_float().unwrap() != 0.0,
-                row[2].get_float().unwrap() != 0.0,
-                row[3].get_float().unwrap() != 0.0,
-            ),
+            stiffness: [
+                row[1].get_float().unwrap() as f32,
+                row[2].get_float().unwrap() as f32,
+                row[3].get_float().unwrap() as f32,
+            ],
         }
     }
 }
@@ -95,7 +95,7 @@ impl Obj {
         let mut loads: Vec<Load> = Vec::new();
         let mut elements: Vec<Element> = Vec::new();
         let mut physgeos: Vec<PhysGeo> = Vec::new();
-        let mut constraints: Vec<Constrains> = Vec::new();
+        let mut constraints: Vec<Constraint> = Vec::new();
 
         for name in workbook.sheet_names() {
             match name.as_ref() {
