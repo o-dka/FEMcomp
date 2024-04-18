@@ -1,8 +1,6 @@
 extern crate nalgebra as na;
 extern crate nalgebra_sparse as na_sparse;
 
-use std::usize::MAX;
-
 use crate::vals::{Constraint, Element, Obj, PhysGeo};
 
 use na::Matrix6;
@@ -133,9 +131,8 @@ impl Obj {
         result = CooMatrix::from(&convert_coo_csc(&result));
 
         println!("{} \n", convert_coo_dense(&result));
-        
-        for cnt in &self.constraints {
-            
+
+        for cnt in &self.constraints {    
             for x in result.triplet_iter_mut(){
                 for (id, &dof) in cnt.stiffness.iter().enumerate() {
                     if dof > 0.0 {
@@ -143,6 +140,7 @@ impl Obj {
                         if (indexer == x.1) && (indexer == x.0) {
                             *x.2 = 1.0;
                             // saved = (x.0,x.1);
+                            continue;
                         }
                         if indexer == x.0 {
                             *x.2 = 0.0;
