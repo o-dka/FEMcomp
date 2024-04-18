@@ -72,7 +72,7 @@ impl std::fmt::Display for Element {
     }
 }
 impl Element {
-    fn create(row: &[Data], vec_of_nodes: &Vec<Node>) -> Self {
+    fn create(row: &[Data], vec_of_nodes: &[Node]) -> Self {
         let node_b_id = row[0].get_float().unwrap() as usize;
         let node_e_id = row[1].get_float().unwrap() as usize;
         let phys_geo_id = row[2].get_float().unwrap() as usize;

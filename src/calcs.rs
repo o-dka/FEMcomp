@@ -4,10 +4,13 @@ extern crate nalgebra_sparse as na_sparse;
 use crate::vals::{Constraint, Element, Obj, PhysGeo};
 
 use na::Matrix6;
-use na_sparse::{convert::serial::{convert_coo_csc, convert_coo_dense}, CooMatrix};
+use na_sparse::{
+    convert::serial::{convert_coo_csc, convert_coo_dense},
+    CooMatrix,
+};
 
 impl Element {
-    fn c_localc_st(&self, pgs: &Vec<PhysGeo>) -> Matrix6<f32> {
+    fn c_localc_st(&self, pgs: &[PhysGeo]) -> Matrix6<f32> {
         let e: f32 = pgs[self.phys_geo_id].e;
         let j: f32 = pgs[self.phys_geo_id].j;
         let f = pgs[self.phys_geo_id].f;
@@ -94,7 +97,7 @@ impl Element {
             1.0,
         ])
     }
-    pub(crate) fn c_glob_st(&self, pgs: &Vec<PhysGeo>) -> Matrix6<f32> {
+    pub(crate) fn c_glob_st(&self, pgs: &[PhysGeo]) -> Matrix6<f32> {
         (self.c_cos_matrix().transpose() * self.c_localc_st(pgs)) * self.c_cos_matrix()
     }
 }
@@ -111,14 +114,13 @@ impl Obj {
             let el_bnode_3 = el.node_b_id * 3;
             for i in 0..3 {
                 for j in 0..3 {
-                    
                     result.push(el_bnode_3 + j, el_bnode_3 + i, el_r[(i, j)]);
                     result.push(el_bnode_3 + j, el_enode_3 + i, el_r[((i + 3), j)]);
                     result.push(el_enode_3 + j, el_bnode_3 + i, el_r[(i, (j + 3))]);
                     result.push(el_enode_3 + j, el_enode_3 + i, el_r[((i + 3), (j + 3))]);
 
                     /*
-                    alt implementation : 
+                    alt implementation :
                     result.push(el_bnode_3 + j, el_bnode_3 + i, el_r[i * 6 + j]);
                     result.push(el_bnode_3 + j, el_enode_3 + i, el_r[(i + 3) * 6 + j]);
                     result.push(el_enode_3 + j, el_bnode_3 + i, el_r[i * 6 + j + 3]);
@@ -130,10 +132,8 @@ impl Obj {
         // le epic kostyl
         result = CooMatrix::from(&convert_coo_csc(&result));
 
-        println!("{} \n", convert_coo_dense(&result));
-
-        for cnt in &self.constraints {    
-            for x in result.triplet_iter_mut(){
+        for cnt in &self.constraints {
+            for x in result.triplet_iter_mut() {
                 for (id, &dof) in cnt.stiffness.iter().enumerate() {
                     if dof > 0.0 {
                         let indexer = cnt.node_id * 3 + id;
@@ -150,7 +150,6 @@ impl Obj {
                         }
                     }
                 }
-                
             }
         }
 
