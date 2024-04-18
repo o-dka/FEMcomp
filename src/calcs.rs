@@ -1,13 +1,10 @@
 extern crate nalgebra as na;
 extern crate nalgebra_sparse as na_sparse;
 
-use crate::vals::{Constraint, Element, Obj, PhysGeo};
+use crate::vals::{Element, Obj, PhysGeo};
 
-use na::Matrix6;
-use na_sparse::{
-    convert::serial::{convert_coo_csc, convert_coo_dense},
-    CooMatrix,
-};
+use na::{DVector, Matrix6};
+use na_sparse::{convert::serial::convert_coo_csc, CooMatrix, CscMatrix};
 
 impl Element {
     fn c_localc_st(&self, pgs: &[PhysGeo]) -> Matrix6<f32> {
@@ -103,7 +100,7 @@ impl Element {
 }
 
 impl Obj {
-    pub fn c_glob(&self) {
+    pub fn c_glob(&self) -> CscMatrix<f32> {
         let mut result: CooMatrix<f32> =
             CooMatrix::zeros((self.elements.len() * 3) + 3, (self.elements.len() * 3) + 3);
 
@@ -129,8 +126,9 @@ impl Obj {
                 });
             });
         }
-        // le epic kostyl , removes the duplicates 
+        // le epic kostyl , removes the duplicates
         result = CooMatrix::from(&convert_coo_csc(&result));
+
         self.constraints.iter().for_each(|cnt| {
             result.triplet_iter_mut().for_each(|x| {
                 cnt.stiffness.iter().enumerate().for_each(|(id, &dof)| {
@@ -142,13 +140,30 @@ impl Obj {
                             (false, true) => *x.2 = 0.0,
                             _ => (), // dont delete this line
                         }
-                        
                     }
                 });
             });
         });
-        
-        print!("{}", convert_coo_dense(&result));
-        
+        CscMatrix::from(&result)
+    }
+    pub fn c_lvec(&self) -> DVector<f32>{
+        let mut input: Vec<f32> = (0..(&self.elements.len() * 3) + 3).map(|_x| 0.0).collect();
+
+        self.loads.iter().for_each(|load| {
+            self.constraints.iter().for_each(|cons| {
+                match cons.node_id == load.node_id {
+                    true => (0..3).for_each(|f| {
+
+                        input[load.node_id] = cons.stiffness[f] - load.forces[f];
+                    }),
+                    false => (0..3).for_each(|f| {
+
+                        input[load.node_id + f] = load.forces[f];
+                    }),
+                }
+            });
+        });
+      
+        DVector::<f32>::from_iterator(self.elements.len() * 3+3,input)
     }
 }

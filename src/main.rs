@@ -12,6 +12,6 @@ fn main() {
     let mut workbook: Xlsx<_> = open_workbook(path).expect("Cannot open file");
     let obj = Obj::create(&mut workbook);
 
-    obj.c_glob();
+    print!("{}",obj.c_lvec().transpose() * obj.c_lvec());
     
 }

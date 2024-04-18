@@ -97,8 +97,10 @@ impl Obj {
         let mut physgeos: Vec<PhysGeo> = Vec::new();
         let mut constraints: Vec<Constraint> = Vec::new();
 
-        for name in workbook.sheet_names() {
-            match name.as_ref() {
+        workbook
+            .sheet_names()
+            .into_iter()
+            .for_each(|name| match name.as_ref() {
                 "nodes" => fill_anything(workbook.worksheet_range(&name).unwrap(), &mut nodes),
                 "loads" => fill_anything(workbook.worksheet_range(&name).unwrap(), &mut loads),
                 "properties" => {
@@ -119,8 +121,7 @@ impl Obj {
                     "Unknown sheet name : {}, check the workbook for errors",
                     name
                 ),
-            }
-        }
+            });
         Obj {
             elements,
             nodes,
