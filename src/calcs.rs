@@ -102,7 +102,7 @@ impl Element {
 impl Obj {
     pub fn c_glob(&self) -> CscMatrix<f32> {
         let mut result: CooMatrix<f32> =
-            CooMatrix::zeros((self.elements.len() * 3) + 3, (self.elements.len() * 3) + 3);
+            CooMatrix::zeros((self.elements.len() * 3) +3, (self.elements.len() * 3) + 3 );
 
         for el in &self.elements {
             let el_r: Matrix6<f32> = el.c_glob_st(&self.physgeos);
@@ -146,19 +146,17 @@ impl Obj {
         });
         CscMatrix::from(&result)
     }
+    
     pub fn c_lvec(&self) -> DVector<f32>{
-        let mut input: Vec<f32> = (0..(&self.elements.len() * 3) + 3).map(|_x| 0.0).collect();
+        let mut input: Vec<f32> = (0..(&self.elements.len() * 3)+3).map(|_x| 0.0).collect();
 
         self.loads.iter().for_each(|load| {
             self.constraints.iter().for_each(|cons| {
                 match cons.node_id == load.node_id {
-                    true => (0..3).for_each(|f| {
-
-                        input[load.node_id] = cons.stiffness[f] - load.forces[f];
-                    }),
+                    true => (),
                     false => (0..3).for_each(|f| {
-
-                        input[load.node_id + f] = load.forces[f];
+                        println!("{} : {}",f,load.node_id);
+                        input[load.node_id  + (f + 3)] = load.forces[f]; // :D
                     }),
                 }
             });
