@@ -11,10 +11,9 @@ use vals::Obj;
 fn main() {
     let path = "test2.xlsx";
     let mut workbook: Xlsx<_> = open_workbook(path).expect("Cannot open file");
-    let obj = Obj::create(&mut workbook);
-    print!("{}",&obj.c_glvec());
+    let mut obj = Obj::create(&mut workbook);
     print!("{}", &obj.c_gzvec());
-    // obj.c_pvec();
-    print!("{:?}", &obj.s);
+    obj.c_s();
+    obj.s.iter().for_each(|f| print!("{}",f));
 
 }

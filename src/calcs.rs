@@ -3,12 +3,12 @@ extern crate nalgebra_sparse as na_sparse;
 
 use crate::vals::{Element, Obj, PhysGeo};
 
-use na::{DVector, Matrix6};
+use na::{DVector, Matrix6, Vector6};
 use na_sparse::{
     convert::serial::convert_coo_csc, factorization::CscCholesky, CooMatrix, CscMatrix,
 };
 
-const COS_ONE: Matrix6<f32> = Matrix6::<f32>::new(
+static COS_ONE: Matrix6<f32> = Matrix6::<f32>::new(
     -1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 0.0,
     0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0,
 );
@@ -98,6 +98,7 @@ impl Obj {
 
             let el_enode_3 = el.node_e_id * 3;
             let el_bnode_3 = el.node_b_id * 3;
+
             (0..3).for_each(|i| {
                 (0..3).for_each(|j| {
                     result.push(el_bnode_3 + j, el_bnode_3 + i, el_r[(i, j)]);
@@ -127,15 +128,14 @@ impl Obj {
         });
         CscMatrix::from(&result)
     }
-    pub fn c_glvec(&self) -> DVector<f32> {
+    fn c_glvec(&self) -> DVector<f32> {
         let mut input: Vec<f32> = (0..(&self.elements.len() * 3) + 3).map(|_x| 0.0).collect();
         for load in self.loads.iter() {
             for cons in self.constraints.iter() {
                 match cons.node_id == load.node_id {
-                    true => (),
+                    true => continue,
                     false => (0..3).for_each(|f| {
-                        //println!("{} : {}", f, load.node_id);
-                        input[load.node_id + (f +3)] = load.forces[f];
+                        input[load.node_id * 3 + f] = load.forces[f];
                     }),
                 }
             }
@@ -153,12 +153,20 @@ impl Obj {
             }
         }
     }
-    // pub fn c_pvec(&mut self) {
-    //     let z_vec =  self.c_gzvec();
-    //     for el in self.elements.iter() {
-    //     let z_vec_e_sl = ;
-    //         let r_lvec = el.c_localc_st(&self.physgeos) * (COS_ONE *z_vec[el]);
-    //         self.s.push(COS_ONE * r_lvec);
-    //     }
-    // }
+    pub fn c_s(&mut self) {
+        let z_vec = self.c_gzvec();
+        if self.c_gzvec().is_empty() {
+            println!("Z vector is empty");
+        } else {
+            self.elements.iter().for_each(|el| {
+                let from_iterator = Vector6::<f32>::from_iterator(
+                    (el.node_b_id..el.node_b_id + 3)
+                        .map(|x| z_vec[x])
+                        .chain((el.node_e_id..el.node_e_id + 3).map(|x| z_vec[x])),
+                );
+                self.s
+                    .push(COS_ONE * el.c_localc_st(&self.physgeos) * (COS_ONE * from_iterator));
+            });
+        }
+    }
 }

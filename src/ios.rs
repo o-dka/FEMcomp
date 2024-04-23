@@ -121,7 +121,7 @@ impl Obj {
             }
         }
         let s = Vec::<Vector6<f32>>::new();
-        return Obj {
+       Obj {
             elements,
             nodes,
             loads,
