@@ -1,3 +1,5 @@
+use nalgebra::Vector6;
+
 #[derive(Debug, Clone, Copy)]
 pub(crate) struct Node(
     pub(crate) f32, // x
@@ -35,4 +37,5 @@ pub(crate) struct Obj {
     pub(crate) loads: Vec<Load>,
     pub(crate) physgeos: Vec<PhysGeo>,
     pub(crate) constraints: Vec<Constraint>,
+    pub(crate) s : Vec<Vector6<f32>>,
 }

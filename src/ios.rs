@@ -1,6 +1,7 @@
 use std::{fs::File, io::BufReader};
 
 use calamine::{Data, DataType, Range, Reader, Xlsx};
+use nalgebra::Vector6;
 
 use crate::vals::{Constraint, Element, Load, Node, Obj, PhysGeo};
 trait New {
@@ -71,6 +72,7 @@ impl std::fmt::Display for Element {
         )
     }
 }
+
 impl Element {
     fn create(row: &[Data], vec_of_nodes: &[Node]) -> Self {
         let node_b_id = row[0].get_float().unwrap() as usize;
@@ -96,38 +98,37 @@ impl Obj {
         let mut elements: Vec<Element> = Vec::new();
         let mut physgeos: Vec<PhysGeo> = Vec::new();
         let mut constraints: Vec<Constraint> = Vec::new();
-
-        workbook
-            .sheet_names()
-            .into_iter()
-            .for_each(|name| match name.as_ref() {
+        for name in workbook.sheet_names().into_iter() {
+            match name.as_ref() {
                 "nodes" => fill_anything(workbook.worksheet_range(&name).unwrap(), &mut nodes),
                 "loads" => fill_anything(workbook.worksheet_range(&name).unwrap(), &mut loads),
                 "properties" => {
                     fill_anything(workbook.worksheet_range(&name).unwrap(), &mut physgeos)
                 }
                 "elements" => {
-                    if !nodes.is_empty() {
-                        for row in workbook.worksheet_range(&name).unwrap().rows().skip(1) {
+                    match nodes.is_empty() {
+                        true => panic!("No node data provided"),
+                        false =>  for row in workbook.worksheet_range(&name).unwrap().rows().skip(1) {
                             elements.push(Element::create(row, &nodes))
-                        }
-                    }
+                        },
+                    }           
                 }
                 "constraints" => {
                     fill_anything(workbook.worksheet_range(&name).unwrap(), &mut constraints)
                 }
 
-                _ => println!(
-                    "Unknown sheet name : {}, check the workbook for errors",
-                    name
-                ),
-            });
-        Obj {
+                _ => println!("{} not a recognizible sheet name",name),
+            }
+        }
+        let s = Vec::<Vector6<f32>>::new();
+        return Obj {
             elements,
             nodes,
             loads,
+            s,
             physgeos,
             constraints,
         }
     }
 }
+// TODO
