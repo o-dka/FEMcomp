@@ -9,12 +9,8 @@ use na_sparse::{
 };
 
 static CM: Matrix6<f32> = Matrix6::<f32>::new(
-    -1.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-    0.0, 1.0, 0.0, 0.0, 0.0, 0.0,
-    0.0, 0.0, -1.0, 0.0, 0.0, 0.0,
-    0.0, 0.0, 0.0, 1.0, 0.0, 0.0,
-    0.0, 0.0, 0.0, 0.0, -1.0, 0.0,
-    0.0, 0.0, 0.0, 0.0, 0.0, 1.0,
+    -1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 0.0,
+    0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0,
 );
 
 impl Element {
@@ -177,11 +173,11 @@ impl Obj {
                     z_vec[el.e_id * 3 + 1],
                     z_vec[el.e_id * 3 + 2],
                 );
-            
-                let x_x = el.c_cos_matrix().transpose()*z_loc;
-                let x =  el.c_localc_st(&self.physgeos).transpose() * x_x ;
-                self.s.push( CM.transpose() * x); // 
-                
+
+                let x = el.c_localc_st(&self.physgeos).transpose()
+                    * el.c_cos_matrix().transpose()
+                    * z_loc;
+                self.s.push(CM.transpose() * x); //
             }
         }
     }
