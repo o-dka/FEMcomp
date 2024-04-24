@@ -1,6 +1,8 @@
 extern crate nalgebra as na;
 extern crate nalgebra_sparse as na_sparse;
 
+use std::vec;
+
 use crate::vals::{Element, Obj, PhysGeo};
 
 use na::{DVector, Matrix6, Vector6};
@@ -155,18 +157,21 @@ impl Obj {
     }
     pub fn c_s(&mut self) {
         let z_vec = self.c_gzvec();
-        if self.c_gzvec().is_empty() {
+        if z_vec.is_empty() {
             println!("Z vector is empty");
         } else {
-            self.elements.iter().for_each(|el| {
-                let from_iterator = Vector6::<f32>::from_iterator(
-                    (el.node_b_id..el.node_b_id + 3)
-                        .map(|x| z_vec[x])
-                        .chain((el.node_e_id..el.node_e_id + 3).map(|x| z_vec[x])),
+            for el in self.elements.iter() {
+                let from_iterator = Vector6::<f32>::new(
+                    z_vec[el.node_b_id * 3],
+                    z_vec[el.node_b_id * 3 + 1],
+                    z_vec[el.node_b_id * 3 + 2],
+                    z_vec[el.node_e_id * 3],
+                    z_vec[el.node_e_id * 3 + 1],
+                    z_vec[el.node_e_id * 3 + 2],
                 );
                 self.s
                     .push(COS_ONE * el.c_localc_st(&self.physgeos) * (COS_ONE * from_iterator));
-            });
+            }
         }
     }
 }
