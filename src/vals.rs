@@ -14,7 +14,7 @@ pub(crate) struct Load {
 }
 #[derive(Debug)]
 pub(crate) struct PhysGeo {
-    pub(crate) f: f32, // this is actually an area
+    pub(crate) a: f32, // this is actually an area
     pub(crate) j: f32, //
     pub(crate) e: f32, //
 }
@@ -25,8 +25,8 @@ pub(crate) struct Constraint {
 }
 #[derive(Debug)]
 pub(crate) struct Element {
-    pub(crate) node_b_id: usize, // beggining
-    pub(crate) node_e_id: usize, // end
+    pub(crate) b_id: usize, // beggining
+    pub(crate) e_id: usize, // end
     pub(crate) phys_geo_id: usize,
     pub(crate) l: f32, // length
     pub(crate) element_sin: f32,

@@ -8,9 +8,13 @@ use na_sparse::{
     convert::serial::convert_coo_csc, factorization::CscCholesky, CooMatrix, CscMatrix,
 };
 
-static COS_ONE: Matrix6<f32> = Matrix6::<f32>::new(
-    -1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 0.0,
-    0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0,
+static CM: Matrix6<f32> = Matrix6::<f32>::new(
+    -1.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+    0.0, 1.0, 0.0, 0.0, 0.0, 0.0,
+    0.0, 0.0, -1.0, 0.0, 0.0, 0.0,
+    0.0, 0.0, 0.0, 1.0, 0.0, 0.0,
+    0.0, 0.0, 0.0, 0.0, -1.0, 0.0,
+    0.0, 0.0, 0.0, 0.0, 0.0, 1.0,
 );
 
 impl Element {
@@ -21,9 +25,9 @@ impl Element {
         }
         let e: f32 = pgs[self.phys_geo_id].e;
         let j: f32 = pgs[self.phys_geo_id].j;
-        let f: f32 = pgs[self.phys_geo_id].f;
+        let a: f32 = pgs[self.phys_geo_id].a;
 
-        let rs: f32 = (e * f) / l;
+        let rs: f32 = (e * a) / l;
         let sz: [f32; 4] = [
             ((12.0 * e * j) / l.powf(3.0)),
             ((6.0 * e * j) / l.powf(2.0)),
@@ -96,11 +100,11 @@ impl Obj {
         let mut result: CooMatrix<f32> =
             CooMatrix::zeros((self.elements.len() * 3) + 3, (self.elements.len() * 3) + 3);
 
-        for el in &self.elements {
+        self.elements.iter().for_each(|el| {
             let el_r: Matrix6<f32> = el.c_glob_st(&self.physgeos);
 
-            let el_enode_3 = el.node_e_id * 3;
-            let el_bnode_3 = el.node_b_id * 3;
+            let el_enode_3: usize = el.e_id * 3;
+            let el_bnode_3: usize = el.b_id * 3;
 
             (0..3).for_each(|i| {
                 (0..3).for_each(|j| {
@@ -110,8 +114,8 @@ impl Obj {
                     result.push(el_enode_3 + j, el_enode_3 + i, el_r[((i + 3), (j + 3))]);
                 });
             });
-        }
-        
+        });
+
         // le epic kostyl , removes the duplicates
         result = CooMatrix::from(&convert_coo_csc(&result));
 
@@ -132,15 +136,17 @@ impl Obj {
         });
         CscMatrix::from(&result)
     }
-    fn c_glvec(&self) -> DVector<f32> {
+    pub fn c_glvec(&self) -> DVector<f32> {
         let mut input: Vec<f32> = (0..(&self.elements.len() * 3) + 3).map(|_x| 0.0).collect();
         for load in self.loads.iter() {
             for cons in self.constraints.iter() {
                 match cons.node_id == load.node_id {
                     true => continue,
-                    false => (0..3).for_each(|f| {
-                        input[load.node_id * 3 + f] = load.forces[f];
-                    }),
+                    false => {
+                        (0..3).for_each(|f| {
+                            input[load.node_id * 3 + f] = load.forces[f];
+                        });
+                    }
                 }
             }
         }
@@ -163,16 +169,19 @@ impl Obj {
             println!("Z vector is empty");
         } else {
             for el in self.elements.iter() {
-                let from_iterator = Vector6::<f32>::new(
-                    z_vec[el.node_b_id * 3],
-                    z_vec[el.node_b_id * 3 + 1],
-                    z_vec[el.node_b_id * 3 + 2],
-                    z_vec[el.node_e_id * 3],
-                    z_vec[el.node_e_id * 3 + 1],
-                    z_vec[el.node_e_id * 3 + 2],
+                let z_loc = Vector6::<f32>::new(
+                    z_vec[el.b_id * 3],
+                    z_vec[el.b_id * 3 + 1],
+                    z_vec[el.b_id * 3 + 2],
+                    z_vec[el.e_id * 3],
+                    z_vec[el.e_id * 3 + 1],
+                    z_vec[el.e_id * 3 + 2],
                 );
-                self.s
-                    .push(COS_ONE * el.c_localc_st(&self.physgeos) * (COS_ONE * from_iterator));
+            
+                let x_x = el.c_cos_matrix().transpose()*z_loc;
+                let x =  el.c_localc_st(&self.physgeos).transpose() * x_x ;
+                self.s.push( CM.transpose() * x); // 
+                
             }
         }
     }
