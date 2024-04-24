@@ -4,15 +4,20 @@ use calamine::{Data, DataType, Range, Reader, Xlsx};
 use nalgebra::Vector6;
 
 use crate::vals::{Constraint, Element, Load, Node, Obj, PhysGeo};
+
+fn check_workbook (workbook: &mut Xlsx<BufReader<File>>) -> bool
+{
+    !(workbook.sheet_names().is_empty() || workbook.sheet_names().into_iter().any( |name|{ workbook.worksheet_range(&name).unwrap().is_empty()}))
+}
 trait New {
     fn new(row: &[Data]) -> Self;
 }
-
 fn fill_anything<T: New>(s: Range<Data>, vec: &mut Vec<T>) {
     for row in s.rows().skip(1) {
         vec.push(T::new(row));
     }
 }
+
 impl New for Node {
     fn new(row: &[Data]) -> Self {
         Node(
@@ -91,7 +96,28 @@ impl Element {
         }
     }
 }
-impl Obj {
+
+impl std::fmt::Display for Obj {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(
+            f,
+            "elements : {:?} 
+          \nnodes : {:?} 
+          \nloads: {:?} 
+          \nphysgeos : {:?} 
+          \nconstraints: {:?},
+          \n s vector: {:?}",
+            self.elements, self.nodes,
+            self.loads,
+            self.physgeos,
+            self.constraints,
+            self.s
+        )
+    }
+}
+
+impl Obj {  
+    // TODO Run a workbook checker before the object creation 
     pub fn create(workbook: &mut Xlsx<BufReader<File>>) -> Self {
         let mut nodes: Vec<Node> = Vec::new();
         let mut loads: Vec<Load> = Vec::new();
@@ -107,7 +133,7 @@ impl Obj {
                 }
                 "elements" => {
                     match nodes.is_empty() {
-                        true => panic!("No node data provided"),
+                        true => panic!("Sheets not in proper order, check order"),
                         false =>  for row in workbook.worksheet_range(&name).unwrap().rows().skip(1) {
                             elements.push(Element::create(row, &nodes))
                         },
@@ -117,7 +143,7 @@ impl Obj {
                     fill_anything(workbook.worksheet_range(&name).unwrap(), &mut constraints)
                 }
 
-                _ => println!("{} not a recognizible sheet name",name),
+                _ => println!("{} is not a recognizible sheet name",name),
             }
         }
         let s = Vec::<Vector6<f32>>::new();
@@ -130,5 +156,8 @@ impl Obj {
             constraints,
         }
     }
+    // TODO stuff to file 
+    pub fn output(&self,workbook: &mut Xlsx<BufReader<File>>) {
+        todo!()
+    }
 }
-// TODO

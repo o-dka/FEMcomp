@@ -1,8 +1,6 @@
 extern crate nalgebra as na;
 extern crate nalgebra_sparse as na_sparse;
 
-use std::vec;
-
 use crate::vals::{Element, Obj, PhysGeo};
 
 use na::{DVector, Matrix6, Vector6};
@@ -18,6 +16,9 @@ static COS_ONE: Matrix6<f32> = Matrix6::<f32>::new(
 impl Element {
     fn c_localc_st(&self, pgs: &[PhysGeo]) -> Matrix6<f32> {
         let l: f32 = self.l;
+        if pgs.is_empty() {
+            panic!("Physgeo vector is empty!");
+        }
         let e: f32 = pgs[self.phys_geo_id].e;
         let j: f32 = pgs[self.phys_geo_id].j;
         let f: f32 = pgs[self.phys_geo_id].f;
@@ -110,6 +111,7 @@ impl Obj {
                 });
             });
         }
+        
         // le epic kostyl , removes the duplicates
         result = CooMatrix::from(&convert_coo_csc(&result));
 

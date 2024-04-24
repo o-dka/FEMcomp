@@ -18,6 +18,7 @@ pub(crate) struct PhysGeo {
     pub(crate) j: f32, //
     pub(crate) e: f32, //
 }
+#[derive(Debug)]
 pub(crate) struct Constraint {
     pub(crate) node_id: usize,
     pub(crate) stiffness: [f32;3],

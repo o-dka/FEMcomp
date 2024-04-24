@@ -1,8 +1,8 @@
 extern crate calamine as ca;
 extern  crate nalgebra_sparse as nas;
 
-mod calcs;
-mod ios;
+pub mod calcs;
+pub mod ios;
 mod vals;
 
 use ca::{open_workbook, Xlsx};
