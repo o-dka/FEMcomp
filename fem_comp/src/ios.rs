@@ -131,7 +131,7 @@ impl Obj {
                         fill_anything(workbook.worksheet_range(&name).unwrap(), &mut physgeos)
                     }
                     "elements" => match nodes.is_empty() {
-                        true => panic!("Sheets not in proper order, check order"),
+                        true => panic!("Sheets not in proper order, nodes should always be the first sheet!"),
                         false => {
                             for row in workbook.worksheet_range(&name).unwrap().rows().skip(1) {
                                 elements.push(Element::create(row, &nodes))
@@ -156,7 +156,7 @@ impl Obj {
                 constraints,
             }
         } else {
-            panic!("Workbook missing!!");
+            panic!("Sheets missing!!");
         }
     }
 }

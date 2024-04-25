@@ -32,11 +32,11 @@ pub(crate) struct Element {
     pub(crate) element_sin: f32,
     pub(crate) element_cos: f32,
 }
-pub(crate) struct Obj {
+pub struct Obj {
     pub(crate) elements: Vec<Element>,
     pub(crate) nodes: Vec<Node>,
     pub(crate) loads: Vec<Load>,
     pub(crate) physgeos: Vec<PhysGeo>,
     pub(crate) constraints: Vec<Constraint>,
-    pub(crate) s : Vec<Vector6<f32>>,
+    pub s : Vec<Vector6<f32>>,
 }

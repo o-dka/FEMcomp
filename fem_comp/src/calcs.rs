@@ -8,7 +8,7 @@ use na_sparse::{
     convert::serial::convert_coo_csc, factorization::CscCholesky, CooMatrix, CscMatrix,
 };
 
-static CM: Matrix6<f32> = Matrix6::<f32>::new(
+const CM: Matrix6<f32> = Matrix6::<f32>::new(
     -1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 0.0,
     0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0,
 );
@@ -40,7 +40,7 @@ impl Element {
             0.0, sz[1], sz[3], 0.0, -sz[1], sz[2], // 6
         )
     }
-    pub(crate) fn c_cos_matrix(&self) -> Matrix6<f32> {
+    fn c_cos_matrix(&self) -> Matrix6<f32> {
         Matrix6::<f32>::new(
             //  1st row
             self.element_cos,
@@ -86,7 +86,7 @@ impl Element {
             1.0,
         )
     }
-    pub(crate) fn c_glob_st(&self, pgs: &[PhysGeo]) -> Matrix6<f32> {
+    fn c_glob_st(&self, pgs: &[PhysGeo]) -> Matrix6<f32> {
         (self.c_cos_matrix().transpose() * self.c_localc_st(pgs)) * self.c_cos_matrix()
     }
 }
@@ -132,7 +132,7 @@ impl Obj {
         });
         CscMatrix::from(&result)
     }
-    pub fn c_glvec(&self) -> DVector<f32> {
+    fn c_glvec(&self) -> DVector<f32> {
         let mut input: Vec<f32> = (0..(&self.elements.len() * 3) + 3).map(|_x| 0.0).collect();
         for load in self.loads.iter() {
             for cons in self.constraints.iter() {
