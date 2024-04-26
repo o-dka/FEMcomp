@@ -4,8 +4,7 @@ version = "0.1.0"
 edition = "2021" 
 
 [dependencies]
-bevy = { version = "0.13.0", features = ["dynamic_linking"] }
+#bevy = { version = "0.13.0", features = ["dynamic_linking"] }
 fem_comp = { path = "../fem_comp" }
-
-[profile.dev]
-opt-level = 1
+raylib = "3.7.0"
+nfd2 = "0.3.1"

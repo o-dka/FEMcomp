@@ -5,3 +5,7 @@ members = [
     "fem_gui",
 ]
 resolver = "2"
+
+[profile.dev]
+opt-level = 1
+

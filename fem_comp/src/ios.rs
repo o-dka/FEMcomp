@@ -1,4 +1,4 @@
-use std::{fs::File, io::BufReader};
+use std::{fs:: File, io::BufReader};
 
 use calamine::{Data, DataType, Range, Reader, Xlsx};
 use nalgebra::Vector6;
@@ -63,6 +63,27 @@ impl New for Constraint {
     }
 }
 
+impl std::fmt::Display for Node {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f,"x : {} y : {}", self.0, self.1)
+    }
+}
+impl std::fmt::Display for Load {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Node number : {} ,Loads : \nx {} ;\ny {} ;\np {} ;\n",self.node_id, self.forces[0],self.forces[1],self.forces[2])
+    }
+}
+impl std::fmt::Display for Constraint {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Node number : {} , Constraints : \nx {} ;\ny {} ;\np {} ;\n",self.node_id, self.stiffness[0],self.stiffness[1],self.stiffness[2])
+    }
+}
+impl std::fmt::Display for PhysGeo {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "PhysGeo : \na {} ;\nj {} ;\ne {} ;\n",self.a,self.j,self.e)
+    }
+}
+
 impl std::fmt::Display for Element {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(
@@ -105,18 +126,18 @@ impl std::fmt::Display for Obj {
         write!(
             f,
             "elements : {:?} 
-          \nnodes : {:?} 
-          \nloads: {:?} 
-          \nphysgeos : {:?} 
-          \nconstraints: {:?},
-          \n s vector: {:?}",
+          \nnodes : {:#?} 
+          \nloads: {:#?} 
+          \nphysgeos : {:#?} 
+          \nconstraints: {:#?},
+          \n s vector: {:#?}",
             self.elements, self.nodes, self.loads, self.physgeos, self.constraints, self.s
         )
     }
 }
 
 impl Obj {
-    pub fn create(workbook: &mut Xlsx<BufReader<File>>) -> Self {
+    pub fn create(workbook: &mut Xlsx<BufReader<File>>) -> std::option::Option<Self> {
         if check_workbook(workbook) {
             let mut nodes: Vec<Node> = Vec::new();
             let mut loads: Vec<Load> = Vec::new();
@@ -147,16 +168,29 @@ impl Obj {
             }
             let s = Vec::<Vector6<f32>>::new();
 
-            Obj {
+            Some(Obj {
                 elements,
                 nodes,
                 loads,
                 s,
                 physgeos,
                 constraints,
-            }
+            })
         } else {
             panic!("Sheets missing!!");
         }
+    }
+    pub fn create_empty_obj() -> Self {
+        Obj {
+            elements: Vec::new(),
+            nodes: Vec::new(),
+            loads: Vec::new(),
+            physgeos: Vec::new(),
+            constraints: Vec::new(),
+            s: Vec::new(),
+        }
+    }
+    pub fn is_empty(&self) -> bool {
+        self.nodes.is_empty()
     }
 }

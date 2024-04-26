@@ -114,7 +114,7 @@ impl Obj {
 
         // le epic kostyl , removes the duplicates
         result = CooMatrix::from(&convert_coo_csc(&result));
-
+// TODO rewrite the code below, to be more readabe
         self.constraints.iter().for_each(|cnt| {
             result.triplet_iter_mut().for_each(|x| {
                 cnt.stiffness.iter().enumerate().for_each(|(id, &dof)| {
