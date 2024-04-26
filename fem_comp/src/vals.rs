@@ -20,8 +20,8 @@ pub struct PhysGeo {
 }
 #[derive(Debug)]
 pub struct Constraint {
-    pub(crate) node_id: usize,
-    pub(crate) stiffness: [f32;3],
+    pub node_id: usize,
+    pub stiffness: [f32;3],
 }
 #[derive(Debug)]
 pub struct Element {

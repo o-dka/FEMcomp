@@ -125,13 +125,12 @@ impl std::fmt::Display for Obj {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(
             f,
-            "elements : {:?} 
-          \nnodes : {:#?} 
+            "nodes : {:#?} 
           \nloads: {:#?} 
           \nphysgeos : {:#?} 
           \nconstraints: {:#?},
           \n s vector: {:#?}",
-            self.elements, self.nodes, self.loads, self.physgeos, self.constraints, self.s
+            self.nodes, self.loads, self.physgeos, self.constraints, self.s
         )
     }
 }
