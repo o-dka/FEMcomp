@@ -1,6 +1,6 @@
 extern crate calamine as ca;
 extern  crate nalgebra_sparse as nas;
-
+extern crate rust_xlsxwriter as xlsx_writer;
 pub mod calcs;
 mod ios;
 pub mod vals;
