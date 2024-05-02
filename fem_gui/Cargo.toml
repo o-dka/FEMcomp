@@ -1,0 +1,10 @@
+[package]
+name = "fem_gui"
+version = "0.1.0"
+edition = "2021" 
+
+[dependencies]
+#bevy = { version = "0.13.0", features = ["dynamic_linking"] }
+fem_comp = { path = "../fem_comp" }
+raylib = "3.7.0"
+nfd = { git = "https://github.com/saurvs/nfd-rs.git" }
