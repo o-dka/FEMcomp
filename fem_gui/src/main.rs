@@ -1,6 +1,6 @@
 use fem_comp::{self, vals::Obj};
-extern crate raylib;
 extern crate nfd;
+extern crate raylib;
 use raylib::{ffi::Rectangle, prelude::*};
 
 use nfd::Response;
@@ -17,12 +17,38 @@ enum ConstrType {
     NonFixed,
 }
 // TODO Render the object usings lines , triangles,circles  and rectangles for different constraint types
-
-fn determine(fl: &[f32; 3]) -> ConstrType { 
-    match fl {
-        [x, y, z] if !(*x == 0.0 && *y == 0.0 && *z == 0.0) => ConstrType::FixedC,
-        [x, y, z] if !(*x == 0.0 || *y == 0.0) && *z != 0.0 => ConstrType::FixedXoYNP,
-        _ => ConstrType::NonFixed,
+impl ConstrType {
+    fn determine(fl: &[f32; 3]) -> Self {
+        match fl {
+            [x, y, z] if !(*x == 0.0 && *y == 0.0 && *z == 0.0) => ConstrType::FixedC,
+            [x, y, z] if !(*x == 0.0 || *y == 0.0) && *z != 0.0 => ConstrType::FixedXoYNP,
+            _ => ConstrType::NonFixed,
+        }
+    }
+    pub fn draw_determined(fl: &[f32; 3],x : f32,y : f32 ,d : &mut RaylibDrawHandle) {
+        match ConstrType::determine(fl) {
+            // v1
+            // v2 v3
+            ConstrType::FixedC => d.draw_triangle(
+                Vector2 {
+                    x: x,
+                    y: y - 4.0,
+                },
+                Vector2 {
+                    x: x - 6.0,
+                    y: 3.0 + y,
+                },
+                Vector2 {
+                    x: 6.0 + x,
+                    y: 3.0 + y,
+                },
+                Color::BLACK,
+            ),
+            ConstrType::FixedXoYNP => {
+                d.draw_circle(x as i32, y as i32, 10.0, Color::BLACK)
+            }
+            _ => d.draw_rectangle(x as i32, y as i32, 10, 10, Color::BLACK),
+        }
     }
 }
 fn main() {
@@ -65,7 +91,6 @@ fn main() {
             height: 24.0,
         },
     ];
-
     let mut test: Obj = Obj::create_empty_obj();
 
     let (mut rl, thread) = raylib::init()
@@ -75,7 +100,20 @@ fn main() {
 
     while !rl.window_should_close() {
         let mut d = rl.begin_drawing(&thread);
-      //  d.draw_rectangle_rec(layout_recs[1], Color::LIGHTGRAY);
+        d.draw_rectangle_rec(layout_recs[1], Color::LIGHTGRAY);
+        d.gui_status_bar(layout_recs[2], Some(static_cstr("").as_c_str()));
+        if d.gui_button(layout_recs[3], Some(static_cstr("Input File").as_c_str())) {
+            let output = match nfd::open_file_dialog(Some("xlsx"), Some(".")).expect("oh no") {
+                Response::Okay(file_path) => file_path,
+                Response::OkayMultiple(_) => todo!(),
+                Response::Cancel => todo!(),
+            };
+            test = fem_comp::create_obj_from_xlsx(output.as_str()).expect("Create object error");
+            test.c_s();
+        }
+        if d.gui_button(layout_recs[4], Some(static_cstr("Quit").as_c_str())) {
+            break;
+        }
         if !test.is_empty() {
             for element in test.elements.iter() {
                 let (start_x, start_y, end_x, end_y) = (
@@ -95,49 +133,13 @@ fn main() {
 
                 for ele in test.constraints.iter() {
                     if ele.node_id == element.b_id {
-                        if determine(&ele.stiffness) == ConstrType::FixedC { 
-                            d.draw_triangle(
-                                Vector2 {
-                                    x: 00.0 + start_x,
-                                    y: 00.0 + start_y,
-                                },
-                                Vector2 {
-                                    x: 0.0 + start_x,
-                                    y: 0.0 + start_y,
-                                },
-                                Vector2 {
-                                    x: 0.0 + start_x,
-                                    y: 0.0 + start_y,
-                                },
-                                Color::BLACK,
-                            );
-                        } else if determine(&ele.stiffness) == ConstrType::FixedXoYNP {
-                            d.draw_circle(start_x as i32, start_y as i32, 10.0, Color::BLACK);
-                        } else if determine(&ele.stiffness) == ConstrType::NonFixed {
-                            d.draw_rectangle(start_x as i32, start_y as i32, 10, 10, Color::BLACK);
-                        }
+                        ConstrType::draw_determined(&ele.stiffness,start_x,start_y ,&mut d) ;
+                    }
+                    if ele.node_id == element.e_id {
+                        ConstrType::draw_determined(&ele.stiffness,end_x,end_y ,&mut d) ;    
                     }
                 }
-
             }
-        }
-
-        d.gui_status_bar(layout_recs[2], Some(static_cstr("").as_c_str()));
-        if d.gui_button(layout_recs[3], Some(static_cstr("Input File").as_c_str())) {
-            let output =
-                match nfd::open_file_dialog(Some("xlsx"), Some(".")).expect("oh no") {
-                    Response::Okay(file_path) => file_path,
-                    Response::OkayMultiple(_) => todo!(),
-                    Response::Cancel => todo!(),
-                };
-            test = fem_comp::create_obj_from_xlsx(output.as_str())
-                .expect("Create object error");
-            test.c_s();
-        }
-        if d.gui_button(layout_recs[4], Some(static_cstr("Quit").as_c_str())) {
-            break;
-        }
-        if !test.is_empty() {
             d.draw_text(
                 &format!("{test}"),
                 (layout_recs[0].x as i32) + 10,
@@ -145,7 +147,8 @@ fn main() {
                 10,
                 Color::BLACK,
             );
-        } else {
+        }
+        else {
             d.draw_text(
                 &format!("No object"),
                 (layout_recs[0].x as i32) + 10,
@@ -155,7 +158,6 @@ fn main() {
             );
         }
         d.gui_group_box(layout_recs[0], Some(static_cstr("Object info").as_c_str()));
-
         d.clear_background(Color::WHITE);
     }
 }
