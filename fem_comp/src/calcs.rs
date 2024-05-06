@@ -177,7 +177,7 @@ impl Obj {
                 let x = el.c_localc_st(&self.physgeos).transpose()
                     * el.c_cos_matrix().transpose()
                     * z_loc;
-                self.s.push(CM.transpose() * x); //
+                self.s.push(CM.transpose() * x); 
             }
         }
     }
