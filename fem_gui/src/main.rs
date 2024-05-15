@@ -251,10 +251,10 @@ fn main() {
                 world.draw_elements(&mut d);
                 world.draw_nodes(&mut d);
                 if layout_recs[1].check_collision_point_rec(m_pos) {
-                    if d.is_mouse_button_pressed(MouseButton::MOUSE_RIGHT_BUTTON) {
+                    if d.is_mouse_button_pressed(MouseButton::MOUSE_BUTTON_RIGHT) {
                         world.remove_node(&m_pos);
                     }
-                    if d.is_mouse_button_pressed(MouseButton::MOUSE_LEFT_BUTTON) {
+                    if d.is_mouse_button_pressed(MouseButton::MOUSE_BUTTON_LEFT) {
                         world.new_node(&m_pos, ConstrType::NonFixed);
                     }
                 }
@@ -281,9 +281,10 @@ fn main() {
             camra.zoom = 1.0;
         }
         if d.gui_button(layout_recs[3], Some(static_cstr("Input File").as_c_str())) {
-            file_name = match nfd::open_file_dialog(Some("xlsx"), Some(".")).expect("oh no") {
+            file_name = match nfd::open_file_dialog(Some("xlsx"), None).expect("oh no") {
                 Response::Okay(file_path) => file_path,
                 _ => continue,
+    
             };
             test = fem_comp::create_obj_from_xlsx(file_name.as_str()).expect("Create object error");
             test.c_s();
@@ -300,7 +301,7 @@ fn main() {
                 world = World::new();
                 obj_open = false;
             }
-            if d.gui_button(layout_recs[6], Some(static_cstr("Save object").as_c_str())) {
+            if d.gui_button(layout_recs[6], Some(static_cstr("Save object").as_c_str())) && !(test.is_empty()) {
                 test.write_data(file_name.as_str()).unwrap();
             }
 
@@ -394,6 +395,13 @@ fn main() {
                     10,
                     Color::BLACK,
                 );
+            }
+        }
+        else {
+            if d.gui_button(layout_recs[5], Some(static_cstr("New object").as_c_str())) {
+                test = Obj::create_empty_obj();
+                world = World::new();
+                obj_open = true;
             }
         }
         d.gui_group_box(

@@ -196,7 +196,7 @@ impl Obj {
         self.nodes.is_empty()
     }
  // Remove S vector output , name it after the file name 
-    pub fn write_data(&self,obj_name : &str) -> Result<(), XlsxError> {
+    pub fn write_data(&self, obj_name : &str) -> Result<(), XlsxError> {
         let mut workbook = Workbook::new();
         let decimal_format = Format::new().set_num_format("0.000");
         
@@ -205,15 +205,6 @@ impl Obj {
         self.c_gzvec().iter().enumerate().for_each(|somethng| {
             worksheet.write_with_format((somethng.0 as u32)+1, 0, *somethng.1, &decimal_format).unwrap();
         });
-        // let worksheet = workbook.add_worksheet().set_name("S vectors")?;
-        // worksheet.write(0, 0, "S")?;    
-        // worksheet.write(0, 1, "Element")?;    
-        // for (element_id, x) in self.s.iter().enumerate() {
-        //     worksheet.write((element_id as u32) + 5, 1 , element_id as u32)?;
-        //     for num in x.iter().enumerate() {
-        //         worksheet.write_with_format((num.0 as u32)+1, 0, *num.1, &decimal_format).unwrap();
-        //     }
-        // }
         workbook.save(format!("./{} - output.xlsx" , obj_name))?;
         Ok(())
     }
