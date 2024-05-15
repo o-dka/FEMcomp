@@ -181,7 +181,7 @@ impl Obj {
         }
     }
 
-    pub fn create_empty_obj() -> Self {
+    pub fn default() -> Self {
         Obj {
             elements: Vec::new(),
             nodes: Vec::new(),
@@ -192,10 +192,15 @@ impl Obj {
         }
     }
 
+    pub fn s_convert(&self) -> Vec<[f32;6]> {
+        let mut outp: Vec<[f32;6]> = vec![];
+        self.s.iter().for_each(|f| { outp.push(*f.as_ref()); });
+        outp
+    }
     pub fn is_empty(&self) -> bool {
         self.nodes.is_empty()
     }
- // Remove S vector output , name it after the file name 
+
     pub fn write_data(&self, obj_name : &str) -> Result<(), XlsxError> {
         let mut workbook = Workbook::new();
         let decimal_format = Format::new().set_num_format("0.000");
