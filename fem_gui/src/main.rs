@@ -192,35 +192,6 @@ impl World {
         }
     }
 
-    //  TODO
-    // fn new_node(&mut self, pos: &Vector2, ct: ConstrType) {
-    //     self.nodes.push(VisNode {
-    //         pos: Vector2 { x: pos.x, y: pos.y },
-    //         constraint: ct,
-    //     })
-    // }
-
-    // fn remove_node(&mut self, pos: &Vector2) {
-    //     match self
-    //         .nodes
-    //         .iter()
-    //         .position(|f| f.pos.distance_to(*pos) <= 10.0)
-    //     {
-    //         Some(x) => self.nodes.remove(x),
-    //         None => VisNode {
-    //             pos: Vector2 { x: 0.0, y: 0.0 },
-    //             constraint: ConstrType::NonFixed,
-    //         },
-    //     };
-    // }
-
-    // fn select_node(&self, pos : &Vector2) {
-    //     let  mut min_pos = Vector2::default();
-    //     self.nodes.iter().for_each(|f| {
-    //         f.pos;
-
-    //     })
-    // }
 }
 
 pub fn static_cstr(s: &str) -> CString {
@@ -364,18 +335,48 @@ fn main() {
                     if camra.zoom != 1.0 {
                         node_pos /= camra.zoom;
                     }
-                    //  TODO
-                    // if d.is_key_down(KEY_LEFT_CONTROL)
-                    //         && d.is_mouse_button_pressed(MouseButton::MOUSE_BUTTON_LEFT)
-                    //     {
-                    //         world.remove_node(&node_pos);
-                    //     }
-                    //     if d.is_mouse_button_pressed(MouseButton::MOUSE_BUTTON_LEFT)
-                    //     {
-                    //         world.new_node(&m_pos,ConstrType::NonFixed);
-                    //     }
                 }
             }
+   
+        } else {
+            d.gui_group_box(
+                layout_recs[0],
+                Some(static_cstr(&format!("No object ")).as_c_str()),
+            );
+        }
+
+        d.gui_status_bar(layout_recs[2], Some(static_cstr("").as_c_str()));
+
+        // Bunch of buttons
+        if (d.is_key_down(KEY_LEFT_CONTROL) && d.is_key_pressed(KEY_R))
+            || d.gui_button(
+                layout_recs[8],
+                Some(static_cstr(&format!("Zoom : {}", camra.zoom)).as_c_str()),
+            )
+        {
+            camra.zoom = 1.0;
+        }
+        if (d.is_key_down(KEY_LEFT_CONTROL) && d.is_key_pressed(KEY_O))
+            || d.gui_button(layout_recs[3], Some(static_cstr("Open File").as_c_str()))
+        {
+            file_name = match nfd::open_file_dialog(Some("xlsx"), None).expect("oh no") {
+                Response::Okay(file_path) => file_path,
+                _ => continue,
+            };
+
+            test = fem_comp::create_obj_from_xlsx(file_name.as_str()).expect("Create object error");
+            test.c_s();
+            world = World::new();
+            world.init_world(&test, &layout_recs[1]);
+            obj_open = true;
+        }
+
+        if (d.is_key_down(KEY_LEFT_CONTROL) && d.is_key_pressed(KEY_Q))
+            || d.gui_button(layout_recs[4], Some(static_cstr("Quit").as_c_str()))
+        {
+            break;
+        }
+        if obj_open {
             if d.gui_button(
                 Rectangle {
                     x: layout_recs[0].x + 15.0,
@@ -404,7 +405,7 @@ fn main() {
                 },
                 Some(static_cstr("Loads").as_c_str()),
             ) {
-                if d.gui_window_box(layout_recs[9], Some(static_cstr("Loads").as_c_str())) {
+               while d.gui_window_box(layout_recs[9], Some(static_cstr("Loads").as_c_str())) {
                     d.draw_text(
                         &format!("{:?}", test.loads),
                         (layout_recs[9].x as i32) + 10,
@@ -413,6 +414,7 @@ fn main() {
                         Color::BLACK,
                     );
                 }
+                
             }
             if d.gui_button(
                 Rectangle {
@@ -423,7 +425,7 @@ fn main() {
                 },
                 Some(static_cstr("PhysGeos").as_c_str()),
             ) {
-                if d.gui_window_box(layout_recs[9], Some(static_cstr("PhysGeos").as_c_str())) {
+               if d.gui_window_box(layout_recs[9], Some(static_cstr("PhysGeos").as_c_str())) {
                     d.draw_text(
                         &format!("{:?}", test.physgeos),
                         (layout_recs[9].x as i32) + 10,
@@ -442,7 +444,7 @@ fn main() {
                 },
                 Some(static_cstr("Constraints").as_c_str()),
             ) {
-                if d.gui_window_box(layout_recs[9], Some(static_cstr("Constraints").as_c_str())) {
+               if d.gui_window_box(layout_recs[9], Some(static_cstr("Constraints").as_c_str())) {
                     d.draw_text(
                         &format!("{:?}", test.constraints),
                         (layout_recs[9].x as i32) + 10,
@@ -461,7 +463,7 @@ fn main() {
                 },
                 Some(static_cstr("S vec").as_c_str()),
             ) {
-                if d.gui_window_box(layout_recs[9], Some(static_cstr("S vec").as_c_str())) {
+              if d.gui_window_box(layout_recs[9], Some(static_cstr("S vec").as_c_str())) {
                     d.draw_text(
                         &format!("{:?}", test.s),
                         (layout_recs[9].x as i32) + 10,
@@ -471,48 +473,6 @@ fn main() {
                     );
                 }
             }
-        } else {
-            d.draw_text(
-                &format!("No object"),
-                (layout_recs[0].x as i32) + 10,
-                (layout_recs[0].y as i32) + 15,
-                11,
-                Color::BLACK,
-            );
-        }
-
-        d.gui_status_bar(layout_recs[2], Some(static_cstr("").as_c_str()));
-
-        // Bunch of buttons
-        if (d.is_key_down(KEY_LEFT_CONTROL) && d.is_key_pressed(KEY_R))
-            || d.gui_button(
-                layout_recs[8],
-                Some(static_cstr(&format!("Zoom : {}", camra.zoom)).as_c_str()),
-            )
-        {
-            camra.zoom = 1.0;
-        }
-        if (d.is_key_down(KEY_LEFT_CONTROL) && d.is_key_pressed(KEY_O))
-            || d.gui_button(layout_recs[3], Some(static_cstr("Open File").as_c_str()))
-        {
-            file_name = match nfd::open_file_dialog(Some("xlsx"), Some(".")).expect("oh no") {
-                Response::Okay(file_path) => file_path,
-                _ => continue,
-            };
-
-            test = fem_comp::create_obj_from_xlsx(file_name.as_str()).expect("Create object error");
-            test.c_s();
-            world = World::new();
-            world.init_world(&test, &layout_recs[1]);
-            obj_open = true;
-        }
-
-        if (d.is_key_down(KEY_LEFT_CONTROL) && d.is_key_pressed(KEY_Q))
-            || d.gui_button(layout_recs[4], Some(static_cstr("Quit").as_c_str()))
-        {
-            break;
-        }
-        if obj_open {
             if (d.is_key_down(KEY_LEFT_CONTROL) && d.is_key_pressed(KEY_C))
                 || d.gui_button(layout_recs[5], Some(static_cstr("Clear Input").as_c_str()))
             {
@@ -534,10 +494,11 @@ fn main() {
             {
                 world.visualize(&mut d);
             }
+            d.gui_group_box(
+                layout_recs[0],
+                Some(static_cstr(&format!("Object : {}", file_name)).as_c_str()),
+            );
         }
-        d.gui_group_box(
-            layout_recs[0],
-            Some(static_cstr(&format!("Object : {}", file_name)).as_c_str()),
-        );
+       
     }
 }

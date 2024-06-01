@@ -5,5 +5,5 @@ edition = "2021"
 
 [dependencies]
 fem_comp = { path = "../fem_comp" }
-raylib =  {git = "https://github.com/raylib-rs/raylib-rs.git" }
+raylib = { version = "5.0" } 
 nfd = { git = "https://github.com/MFEK/nfd.rlib.git" }
