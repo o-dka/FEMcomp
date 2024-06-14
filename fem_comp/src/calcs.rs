@@ -114,7 +114,7 @@ impl Obj {
 
         // le epic kostyl , removes the duplicates
         result = CooMatrix::from(&convert_coo_csc(&result));
-// TODO rewrite the code below, to be more readabe
+
         self.constraints.iter().for_each(|cnt| {
             result.triplet_iter_mut().for_each(|x| {
                 cnt.stiffness.iter().enumerate().for_each(|(id, &dof)| {
@@ -163,6 +163,7 @@ impl Obj {
         let z_vec = self.c_gzvec();
         if z_vec.is_empty() {
             println!("Z vector is empty");
+            panic!();
         } else {
             for el in self.elements.iter() {
                 let z_loc = Vector6::<f32>::new(
@@ -177,7 +178,7 @@ impl Obj {
                 let x = el.c_localc_st(&self.physgeos).transpose()
                     * el.c_cos_matrix().transpose()
                     * z_loc;
-                self.s.push(CM.transpose() * x); //
+                self.s.push(CM.transpose() * x); 
             }
         }
     }
