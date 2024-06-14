@@ -163,6 +163,7 @@ impl Obj {
         let z_vec = self.c_gzvec();
         if z_vec.is_empty() {
             println!("Z vector is empty");
+            panic!();
         } else {
             for el in self.elements.iter() {
                 let z_loc = Vector6::<f32>::new(
